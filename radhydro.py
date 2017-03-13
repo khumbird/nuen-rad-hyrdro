@@ -68,7 +68,7 @@ def get_dt(u,r,P,gamma,rho,k):
     for i in range(0,len(P)):dt1[i]=Fc*dx[i]/u[i,k]
     dt2=np.zeros(len(P))
     for i in range(0,len(P)): dt2[i]=dx[i]*Fc/cs[i]
-    dtmax=0.01
+    dtmax=0.005
     dt_choices=np.hstack((dt1,dt2,dtmax))
     dt=np.min(dt_choices)
     return(dt) 
@@ -401,26 +401,26 @@ TbL=1.0
 PbL=5.0
 PbR=5.0
 RHS=0.0
-k=1
-dt=get_dt(u,r,P,gamma,rho,k)
-dt_vect[k]=dt
-dt_prev=dt
-u=predictor_velocity(u,dt_prev,dt,m,A,r,rho,P,RadE,k,PbR,PbL,TbR,TbL,T,gamma)
-print(u)
-r=get_coords(r,u,dt,dt_prev,k)
-rho=get_mass_dens(rho,m,V,k)
-RadE=predictor_rad_E(RadE,A,m,r,u,rho,T,P,Cv,TbL,TbR,dt_prev,dt,k,gamma)
-print(RadE)
-e=predictor_internale(e,RadE,T,P,A,u,r,dt_prev,dt,k,Cv,m,gamma,rho)
-print(e)
-T=get_T(T,e,Cv,k)
-P=get_P(P,e,gamma,rho,k)
-u=corrector_velocity(u,dt_prev,dt,m,A,r,rho,P,RadE,k,PbR,PbL,TbR,TbL,T,gamma)
-print(u)
-r=get_coords(r,u,dt,dt_prev,k)
-RadE=corrector_rad_E(RadE,A,m,r,u,rho,T,P,Cv,TbL,TbR,dt_prev,dt,k,gamma)
-print(RadE)
-e=corrector_internale(e,RadE,T,P,A,u,r,dt_prev,dt,k,Cv,m,gamma,rho)
-print(e)
-lhs=compute_energy_conservationLHS(u,m,rho,e,RadE,k)
-RHS=compute_energy_conservationRHS(RHS,P,gamma,u,r,rho,k,RadE,A,dt,dt_prev)
+for k in range(0,Nt):
+    dt=get_dt(u,r,P,gamma,rho,k)
+    dt_vect[k]=dt
+    dt_prev=dt
+    u=predictor_velocity(u,dt_prev,dt,m,A,r,rho,P,RadE,k,PbR,PbL,TbR,TbL,T,gamma)
+    print(u)
+    r=get_coords(r,u,dt,dt_prev,k)
+    rho=get_mass_dens(rho,m,V,k)
+    RadE=predictor_rad_E(RadE,A,m,r,u,rho,T,P,Cv,TbL,TbR,dt_prev,dt,k,gamma)
+    print(RadE)
+    e=predictor_internale(e,RadE,T,P,A,u,r,dt_prev,dt,k,Cv,m,gamma,rho)
+    print(e)
+    T=get_T(T,e,Cv,k)
+    P=get_P(P,e,gamma,rho,k)
+    u=corrector_velocity(u,dt_prev,dt,m,A,r,rho,P,RadE,k,PbR,PbL,TbR,TbL,T,gamma)
+    print(u)
+    r=get_coords(r,u,dt,dt_prev,k)
+    RadE=corrector_rad_E(RadE,A,m,r,u,rho,T,P,Cv,TbL,TbR,dt_prev,dt,k,gamma)
+    print(RadE)
+    e=corrector_internale(e,RadE,T,P,A,u,r,dt_prev,dt,k,Cv,m,gamma,rho)
+    print(e)
+    lhs=compute_energy_conservationLHS(u,m,rho,e,RadE,k)
+    RHS=compute_energy_conservationRHS(RHS,P,gamma,u,r,rho,k,RadE,A,dt,dt_prev)
