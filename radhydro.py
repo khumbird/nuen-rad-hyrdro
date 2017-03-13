@@ -354,7 +354,7 @@ def compute_energy_conservationLHS(u,m,rho,e,RadE,k):
         sum3+=0.5*m[i]*u[i,0]**2        
     for i in range(0,len(e)):
         sum4+=m[i]*(e[i,0]+RadE[i,0]/rho[i,0])
-    return(sum1+sum2-sum3+sum4)
+    return(sum1+sum2-sum3-sum4)
 
 def compute_energy_conservationRHS(RHS,P,gamma,u,r,rho,k,RadE,A,dt,dt_prev):
     QPk=artif_viscosity(P,gamma,u,r,rho,k)
@@ -362,14 +362,15 @@ def compute_energy_conservationRHS(RHS,P,gamma,u,r,rho,k,RadE,A,dt,dt_prev):
     kappaT=get_tot_opacity_corrector(T,k)
     a=0.01372
     c=299.792
+    Ppk=get_Ppk(P,k)
+    Apk=get_Apk(A,k)  
+    RadEpk=get_RadEpk(RadE,k)    
     dtk=0.5*(dt_prev+dt)        
     F0L=-2.0*c*0.5*(RadE[1,k]+RadE[1,k-1]-RadE[0,k]-RadE[0,k-1])/(3.0*(0.5*(rho[0,k]+rho[0,k-1])*0.5*(r[1,k]+r[1,k-1]-r[0,k]-r[0,k-1])*kappaT[0]+
                     0.5*(rho[1,k]+rho[1,k-1])*0.5*(r[2,k]+r[2,k-1]-r[1,k]-r[1,k-1])*kappaT[1])) #not sure about opacity eval
     F0R=-2.0*c*0.5*(RadE[-2,k]+RadE[-2,k-1]-RadE[-1,k]-RadE[-1,k-1])/(3.0*(0.5*(rho[-1,k]+rho[-1,k-1])*0.5*(r[-2,k]+r[-2,k-1]-r[-1,k]-r[-1,k-1])*kappaT[-1]+
                     0.5*(rho[-2,k]+rho[-2,k-1])*0.5*(r[-1,k]+r[-1,k-1]-r[-2,k]-r[-2,k-1])*kappaT[-2])) #not sure about opacity eval
-    
-    RHS+=(0.5*(A[0,k]+A[0,k-1])*F0L-0.5*(A[-1,k]+A[-1,k-1])*F0R)*dtk+0.5*(A[0,k]+A[0,k-1]*((1./3.)*0.5*(RadE[0,k]+RadE[0,k-1])+0.5*(P[0,k]+QPk[0]+P[0,k-1]+QPkm1[0]))*0.5*(u[0,k-1]+u[0,k])-
-               0.5*(A[-1,k-1]+A[-1,k])*((1./3.)*0.5*(RadE[-1,k]+RadE[-1,k-1])+0.5*(P[-1,k]+QPk[-1]+P[-1,k-1]+QPkm1[-1]))*0.5*(u[-1,k-1]+u[-1,k]) )*dtk
+    RHS+=(0.5*(A[0,k]+A[0,k-1])*F0L-0.5*(A[-1,k]+A[-1,k-1])*F0R)*dtk+(Apk[0]*((1./3.)*RadEpk[0]+Ppk[0])*0.5*(u[0,k-1]+u[0,k]))*dtk-(Apk[-1]*((1./3.)*RadEpk[-1]+Ppk[-1])*0.5*(u[-1,k-1]+u[-1,k]))*dtk
     return(RHS)
 
     
