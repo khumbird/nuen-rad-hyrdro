@@ -156,7 +156,7 @@ def predictor_boundary_velocity(u,k,m,T,dtk,r,A,P,PbR,PbL,TbR,TbL,RadE,rho):
     RadEN12=(3*rho[-1,k-1]*(r[-1,k-1]-r[-2,k-1])*kappaT[-1]*a*c*TbR**4+4*RadE[-1,k-1])/(3*rho[-1,k-1]*(r[-1,k-1]-r[-2,k-1])*kappaT[-1]+4)
     uleft=u[0,k-1]-(dtk*A[0,k-1]/(0.5*m[0]))*(P[0,k-1]-PbL+(1./3.)*RadE[0]-(1./3.)*RadE12)    
     uright=u[-1,k-1]-(dtk*A[-1,k-1]/(0.5*m[-1]))*(P[-1,k-1]-PbR+(1./3.)*RadE[-1]-(1./3.)*RadEN12)   
-    return(uleft[0],uright[0])
+    return(0.0,0.0)#(uleft[0],uright[0])
        
 def predictor_velocity(u,dt_prev,dt,m,A,r,rho,P,RadE,k,PbR,PbL,TbR,TbL,T,gamma):  #i is i+1/2, k is k+1/2
     dtk=0.5*(dt_prev+dt)    
@@ -272,22 +272,25 @@ def corrector_boundary_velocity(u,k,m,T,dtk,r,A,P,PbR,PbL,TbR,TbL,RadE,rho):
     RadEN12=(3*rho[-1,k]*(r[-1,k]-r[-2,k])*kappaT[-1]*a*c*TbR**4+4*RadE[-1,k])/(3*rho[-1,k]*(r[-1,k]-r[-2,k])*kappaT[-1]+4)
     uleft=u[0,k]-(dtk*A[0,k]/(0.5*m[0]))*(P[0,k]-PbL+(1./3.)*RadE[0]-(1./3.)*RadE12)    
     uright=u[-1,k]-(dtk*A[-1,k]/(0.5*m[-1]))*(P[-1,k]-PbR+(1./3.)*RadE[-1]-(1./3.)*RadEN12)   
-    return(uleft[0],uright[0])
+    return(0.0,0.0)#(uleft[0],uright[0])
        
 def corrector_velocity(u,dt_prev,dt,m,A,r,rho,P,RadE,k,PbR,PbL,TbR,TbL,T,gamma):  #i is i+1/2, k is k+1/2
     a=0.01372
     c=299.792    
+    Ppk=get_Ppk(P,k)
+    Apk=get_Apk(A,k)   
+    RadEpk=get_RadEpk(RadE,k)
     dtk=0.5*(dt_prev+dt)    
     QPk=artif_viscosity(P,gamma,u,r,rho,k)
     QPkm1=artif_viscosity(P,gamma,u,r,rho,k-1)
     u[0,k],u[-1,k]=corrector_boundary_velocity(u,k,m,T,dtk,A,r,P,PbR,PbL,TbR,TbL,RadE,rho)
     for i in range(1,len(u)-1):
         if(i==len(u)-2):
-            u[i,k]=u[i,k-1]-dtk*0.5*((A[i,k-1]+A[i,k])/m[i])*(0.5*(PbR+PbR)+(1./3.)*a*TbR**4
-                -0.5*(P[i,k-1]+P[i,k])-(1./3.)*0.5*(RadE[i,k-1]+RadE[i,k]))
+            u[i,k]=u[i,k-1]-dtk*(Apk[i]/m[i])*(0.5*(PbR+PbR)+(1./3.)*a*TbR**4
+                -Ppk[i]-(1./3.)*RadEpk[i])
         else:
-            u[i,k]=u[i,k-1]-dtk*0.5*((A[i,k-1]+A[i,k])/m[i])*(0.5*(P[i+1,k]+QPk[i+1]+P[i+1,k-1]+QPkm1[i+1])+(1./3.)*0.5*(RadE[i+1,k-1]+RadE[i+1,k])
-                -0.5*(P[i,k-1]+QPkm1[i]+P[i,k]+QPk[i])-(1./3.)*0.5*(RadE[i,k-1]+RadE[i,k]))       
+            u[i,k]=u[i,k-1]-dtk*(Apk[i]/m[i])*((Ppk[i+1]+QPk[i+1])+(1./3.)*RadEpk[i+1]
+                -(Ppk[i]+QPkm1[i])-(1./3.)*RadEpk[i])       
 
     return(u)
     
@@ -312,7 +315,7 @@ def corrector_rad_E(RadE,A,m,r,u,rho,T,P,Cv,TbL,TbR,dt_prev,dt,k,gamma):
         xi[i]=-(Ppk[i]+QP[i])*(Apk[i+1]*0.5*(u[i+1,k-1]+u[i+1,k])- Apk[i]*0.5*(u[i,k-1]+u[i,k]))-(m[i]/dtk)*(e[i,k]-e[i,k-1])   
     for i in range(1,len(r)-2):        
         F0p[i]=-2.0*c/(3.0*(0.5*(rho[i,k]+rho[i,k-1])*(0.5*(r[i,k]+r[i,k-1]-r[i-1,k]-r[i-1,k-1]))*kappaT[i]+0.5*(rho[i+1,k]+rho[i+1,k-1])*(0.5*(r[i+1,k]+r[i+1,k-1]-r[i,k]-r[i,k-1]))*kappaT[i+1])) #not sure about opacity eval
-        F0m[i]=-2.0*c/(3.0*(0.5*(rho[i,k]+rho[i,k-1])*(0.5*(r[i,k]+r[i,k-1]-r[i-1,k]-r[i-1,k-1]))*kappaT[i]+0.5*(rho[i-1,k]+rho[i-1,k-1])*(0.5*(r[i,k]+r[i,k-1]-r[i-1,k]-r[i-1,k-1]))*kappaT[i])) #not sure about opacity eval
+        F0m[i]=-2.0*c/(3.0*(0.5*(rho[i,k]+rho[i,k-1])*(0.5*(r[i,k]+r[i,k-1]-r[i-1,k]-r[i-1,k-1]))*kappaT[i]+0.5*(rho[i-1,k]+rho[i-1,k-1])*(0.5*(r[i,k]+r[i,k-1]-r[i-1,k]-r[i-1,k-1]))*kappaT[i-1])) #not sure about opacity eval
     C=np.zeros((len(RadE),len(RadE)))
     Q=np.zeros(len(RadE))
     C[0,0]=1.0; C[-1,-1]=1.0
@@ -321,10 +324,7 @@ def corrector_rad_E(RadE,A,m,r,u,rho,T,P,Cv,TbL,TbR,dt_prev,dt,k,gamma):
         C[i,i-1]=0.5*F0m[i]*0.5*(A[i,k-1]+A[i,k])
         C[i,i]=m[i]/(dtk*rho[i,k])+0.5*m[i]*kappaA[i]*c*(1.0-nu[i])-0.5*(A[i,k-1]+A[i,k])*0.5*F0m[i]-0.5*(A[i+1,k-1]+A[i+1,k])*0.5*F0p[i]
         C[i,i+1]=0.5*F0p[i]*0.5*(A[i+1,k-1]+A[i+1,k])
-        Q[i]=nu[i]*xi[i]+m[i]*kappaA[i]*c*(1.0-nu[i])*(a*0.5*(T[i,k-1]**4+T[i,k]**4)-0.5*RadE[i,k-1])
-        -(1./3.0)*0.5*(RadE[i,k-1]+RadE[i,k])*(Apk[i+1]*0.5*(u[i+1,k-1]+u[i+1,k])-A[i]*0.5*(u[i,k-1]+u[i,k]))
-        +0.5*(A[i,k-1]+A[i,k])*0.5*F0m[i]*(RadE[i,k-1]-RadE[i-1,k-1])
-        -0.5*(A[i+1,k-1]+A[i+1,k])*0.5*F0p[i]*(RadE[i+1,k-1]-RadE[i,k-1])+m[i]*RadE[i,k-1]/(dtk*rho[i,k-1])
+        Q[i]=nu[i]*xi[i]+m[i]*kappaA[i]*c*(1.0-nu[i])*(a*0.5*(T[i,k-1]**4+T[i,k]**4)-0.5*RadE[i,k-1])-(1./3.0)*0.5*(RadE[i,k-1]+RadE[i,k])*(Apk[i+1]*0.5*(u[i+1,k-1]+u[i+1,k])-Apk[i]*0.5*(u[i,k-1]+u[i,k]))+0.5*(A[i,k-1]+A[i,k])*0.5*F0m[i]*(RadE[i,k-1]-RadE[i-1,k-1])-0.5*(A[i+1,k-1]+A[i+1,k])*0.5*F0p[i]*(RadE[i+1,k-1]-RadE[i,k-1])+m[i]*RadE[i,k-1]/(dtk*rho[i,k-1])
     RadE[:,k]=np.linalg.solve(C,Q)
     return(RadE) 
     
@@ -397,8 +397,8 @@ P=np.ones((N,Nt))*5
 for i in range(0,N):P[i,:]=(gamma-1)*rho[i,:]*e[i,:]
 TbR=1.0
 TbL=1.0
-PbL=0.0
-PbR=0.0
+PbL=5.0
+PbR=5.0
 RHS=0.0
 k=1
 dt=get_dt(u,r,P,gamma,rho,k)
