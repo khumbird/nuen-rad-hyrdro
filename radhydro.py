@@ -153,10 +153,10 @@ def predictor_boundary_velocity(u,k,m,T,dtk,r,A,P,PbR,PbL,TbR,TbL,RadE,rho):
     c=299.792
     kappaT=get_tot_opacity(T,k)
     RadE12=(3*rho[0,k-1]*(r[1,k-1]-r[0,k-1])*kappaT[0]*a*c*TbL**4+4*RadE[0,k-1])/(3*rho[0,k-1]*(r[1,k-1]-r[0,k-1])*kappaT[0]+4)
-    RadEN12=(3*rho[-1,k-1]*(r[-1,k-1]-r[-2,k-1])*kappaT[-1]*a*c*TbR**4+4*RadE[-1,k-1])/(3*rho[-1,k-1]*(r[-1,k-1]-r[-2,k-1])*kappaT[-1]+4)
+    RadEN12=(3*rho[-1,k-1]*(r[-1,k-1]-r[-2,k-1])*kappaT[-1]*a*c*TbR**4+4*RadE[-1,k-1])/(3*rho[-1,k-1]*(r[-2,k-1]-r[-1,k-1])*kappaT[-1]+4)
     uleft=u[0,k-1]-(dtk*A[0,k-1]/(0.5*m[0]))*(P[0,k-1]-PbL+(1./3.)*RadE[0]-(1./3.)*RadE12)    
     uright=u[-1,k-1]-(dtk*A[-1,k-1]/(0.5*m[-1]))*(P[-1,k-1]-PbR+(1./3.)*RadE[-1]-(1./3.)*RadEN12)   
-    return(0.0,0.0)#(uleft[0],uright[0])
+    return(uleft[0],uright[0])
        
 def predictor_velocity(u,dt_prev,dt,m,A,r,rho,P,RadE,k,PbR,PbL,TbR,TbL,T,gamma):  #i is i+1/2, k is k+1/2
     dtk=0.5*(dt_prev+dt)    
@@ -269,10 +269,10 @@ def corrector_boundary_velocity(u,k,m,T,dtk,r,A,P,PbR,PbL,TbR,TbL,RadE,rho):
     c=299.792
     kappaT=get_tot_opacity(T,k)
     RadE12=(3*rho[0,k]*(r[1,k]-r[0,k])*kappaT[0]*a*c*TbL**4+4*RadE[0,k])/(3*rho[0,k]*(r[1,k]-r[0,k])*kappaT[0]+4)
-    RadEN12=(3*rho[-1,k]*(r[-1,k]-r[-2,k])*kappaT[-1]*a*c*TbR**4+4*RadE[-1,k])/(3*rho[-1,k]*(r[-1,k]-r[-2,k])*kappaT[-1]+4)
+    RadEN12=(3*rho[-1,k]*(r[-1,k]-r[-2,k])*kappaT[-1]*a*c*TbR**4+4*RadE[-1,k])/(3*rho[-1,k]*(r[-2,k]-r[-1,k])*kappaT[-1]+4)
     uleft=u[0,k]-(dtk*A[0,k]/(0.5*m[0]))*(P[0,k]-PbL+(1./3.)*RadE[0]-(1./3.)*RadE12)    
     uright=u[-1,k]-(dtk*A[-1,k]/(0.5*m[-1]))*(P[-1,k]-PbR+(1./3.)*RadE[-1]-(1./3.)*RadEN12)   
-    return(0.0,0.0)#(uleft[0],uright[0])
+    return(uleft[0],uright[0])
        
 def corrector_velocity(u,dt_prev,dt,m,A,r,rho,P,RadE,k,PbR,PbL,TbR,TbL,T,gamma):  #i is i+1/2, k is k+1/2
     a=0.01372
