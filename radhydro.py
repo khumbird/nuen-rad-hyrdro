@@ -73,20 +73,28 @@ def get_dt(u,r,P,gamma,rho,k):
     dt=np.min(dt_choices)
     return(dt) 
     
-def get_abs_opacity(T,k):
+def get_abs_opacity(T,k,Tbl,Tbr):
     k1=20.0;k2=0.0;k3=1.0;
     #k1=1;k2=1;k3=1;
     n=1
     kappa=np.zeros(len(T))
     for i in range(0,len(T)): kappa[i]=k1/(k2*T[i,k-1]**n+k3)
+    Tbound=((Tbl**4+T[0,k-1]**4)/2.0)**(1.0/4.0)
+    kappa[0]=k1/(k2*Tbound**n+k3)
+    Tbound2=((Tbr**4+T[-1,k-1]**4)/2.0)**(1.0/4.0)
+    kappa[-1]=k1/(k2*Tbound*2*n+k3)        
     return(kappa)
 
-def get_tot_opacity(T,k):
+def get_tot_opacity(T,k,Tbl,Tbr):
     k1=20.5;k2=0.0;k3=1.0;
     #k1=1;k2=1;k3=1;
     n=1
     kappa=np.zeros(len(T))
     for i in range(0,len(T)): kappa[i]=k1/(k2*T[i,k-1]**n+k3)
+    Tbound=((Tbl**4+T[0,k-1]**4)/2.0)**(1.0/4.0)
+    kappa[0]=k1/(k2*Tbound**n+k3)
+    Tbound2=((Tbr**4+T[-1,k-1]**4)/2.0)**(1.0/4.0)
+    kappa[-1]=k1/(k2*Tbound2**n+k3)
     return(kappa)
     
 def get_coords(r,u,dt,dt_prev,k):
@@ -153,7 +161,7 @@ def artif_viscosity(P,gamma,u,r,rho,k):
 def predictor_boundary_velocity(u,k,m,T,dtk,r,A,P,PbR,PbL,TbR,TbL,RadE,rho):
     a=0.01372
     c=299.792
-    kappaT=get_tot_opacity(T,k)
+    kappaT=get_tot_opacity(T,k,TbL,TbR)
     RadE12=(3*rho[0,k-1]*(r[1,k-1]-r[0,k-1])*kappaT[0]*a*TbL**4+4*RadE[0,k-1])/(3*rho[0,k-1]*(r[1,k-1]-r[0,k-1])*kappaT[0]+4)
     RadEN12=(3*rho[-1,k-1]*(r[-1,k-1]-r[-2,k-1])*kappaT[-1]*a*TbR**4+4*RadE[-1,k-1])/(3*rho[-1,k-1]*(r[-2,k-1]-r[-1,k-1])*kappaT[-1]+4)
     uleft=u[0,k-1]-(dtk*A[0,k-1]/(0.5*m[0]))*(P[0,k-1]-PbL+(1./3.)*RadE[0]-(1./3.)*RadE12)    
@@ -175,7 +183,7 @@ def predictor_rad_E(RadE,A,m,r,u,rho,T,P,Cv,TbL,TbR,dt_prev,dt,k,gamma):
     a=0.01372
     c=299.792
     dtk=0.5*(dt_prev+dt)    
-    kappaA=get_abs_opacity(T,k)
+    kappaA=get_abs_opacity(T,k,TbL,TbR)
     #RadE[0,k]=a*c*TbL**4  #Boundary conditions
     #RadE[-1,k]=a*c*TbR**4    
     Tp=T.copy()
@@ -184,21 +192,27 @@ def predictor_rad_E(RadE,A,m,r,u,rho,T,P,Cv,TbL,TbR,dt_prev,dt,k,gamma):
     for i in range(0,len(T)-1):
         Tp[i]=((T[i,k-1]**4+T[i+1,k-1]**4)/2.0)**0.25
         Tm[i]=((T[i,k-1]**4+T[i-1,k-1]**4)/2.0)**0.25
-    kappaTp=get_tot_opacity(Tp,k)
-    kappaTm=get_tot_opacity(Tm,k)
+    kappaTp=get_tot_opacity(Tp,k,TbL,TbR)
+    kappaTm=get_tot_opacity(Tm,k,TbL,TbR)
     nu=np.zeros(len(T))
     xi=np.zeros(len(T))
     F0p=np.zeros(len(r)-2)
     F0m=np.zeros(len(r)-2)
     for i in range(0,len(T)):
         nu[i]=(dtk*kappaA[i]*c*2*a*T[i,k-1]**3)/(Cv[i]+dtk*kappaA[i]*c*2*a*T[i,k-1]**3)
-        xi[i]=-(P[i,k-1]+QP[i])*(A[i+1,k-1]*0.5*(u[i+1,k-1]+u[i+1,k])- A[i,k-1]*0.5*(u[i,k-1]+u[i,k]))   
+        xi[i]=-(P[i,k-1]+QP[i])*(A[i+1,k-1]*0.5*(u[i+1,k-1]+u[i+1,k])- A[i,k-1]*0.5*(u[i,k-1]+u[i,k])) 
+    F0m[0]=
+    F0p[-1]=    
     for i in range(1,len(T)-1):        
         F0p[i]=-2.0*c/(3.0*(0.5*(rho[i,k]+rho[i,k-1])*(0.5*(r[i+1,k]+r[i+1,k-1]-r[i,k]-r[i,k-1]))*kappaTp[i]+0.5*(rho[i+1,k]+rho[i+1,k-1])*(0.5*(r[i+2,k]+r[i+2,k-1]-r[i+1,k]-r[i+1,k-1]))*kappaTp[i+1])) #not sure about opacity eval
         F0m[i]=-2.0*c/(3.0*(0.5*(rho[i,k]+rho[i,k-1])*(0.5*(r[i+1,k]+r[i+1,k-1]-r[i,k]-r[i,k-1]))*kappaTm[i]+0.5*(rho[i-1,k]+rho[i-1,k-1])*(0.5*(r[i,k]+r[i,k-1]-r[i-1,k]-r[i-1,k-1]))*kappaTm[i])) #not sure about opacity eval        
     C=np.zeros((len(RadE),len(RadE)))
     Q=np.zeros(len(RadE))
-    C[0,0]=1.0; C[-1,-1]=1.0
+    C[0,0]=m[0,k]/(dtk*rho[0,k])+0.5*m[0,k]*kappaA[0]*c*(1.0-nu[0])-0.5*(A[1,k-1]+A[1,k])*0.5*F0m[0]
+    C[0,1]=0.5*F0p[0]*0.5*(A[1,k-1]+A[1,k])
+    C[-1,-1]=
+    C[-1,-2]=
+    Q[-1]=    
  #   Q[0]=RadE[0,k-1];Q[-1]=RadE[-1,k-1] #add real BCs
     Q[0]=0.0;Q[-1]=0.0 #add real BCs    
     for i in range(1,len(RadE)-1):
@@ -215,7 +229,7 @@ def predictor_internale(e,RadE,T,P,A,u,r,dt_prev,dt,k,Cv,m,gamma,rho):
     c=299.792
     QP=artif_viscosity(P,gamma,u,r,rho,k)
     dtk=0.5*(dt_prev+dt)    
-    kappaA=get_abs_opacity(T,k)    
+    kappaA=get_abs_opacity(T,k,TbL,TbR)    
     xi=np.zeros(len(P))
     for i in range(0,len(P)):
         xi[i]=-(P[i,k-1]+QP[i])*(A[i+1,k-1]*0.5*(u[i+1,k-1]+u[i+1,k])- A[i,k-1]*0.5*(u[i,k-1]+u[i,k]))   
@@ -253,26 +267,34 @@ def get_RadEpk(RadE,k):
 
 #corrector u step, call u function sending Apk, Ppk, RadEpk    
 #corrector r, rho steps use the same function as predictor step     
-def get_abs_opacity_corrector(T,k):
+def get_abs_opacity_corrector(T,k,Tbl,Tbr):
     k1=20.0;k2=0.0;k3=1.0;
     #k1=1;k2=1;k3=1;    
     n=1
     kappa=np.zeros(len(T))
     for i in range(0,len(T)): kappa[i]=k1/(k2*(0.5*(T[i,k]**n+T[i,k-1]**n))+k3)
+    Tbound=((Tbl**4+T[0,1]**4)/2.0)**(1.0/4.0)
+    kappa[0]=k1/(k2*Tbound**n+k3)
+    Tbound2=((Tbr**4+T[-1,k]**4)/2.0)**(1.0/4.0)
+    kappa[-1]=k1/(k2*Tbound2**n+k3)
     return(kappa)    
 
-def get_tot_opacity_corrector(T,k):
+def get_tot_opacity_corrector(T,k,Tbl,Tbr):
     k1=20.5;k2=0.0;k3=1.0;
     #k1=1;k2=1;k3=1;    
     n=1
     kappa=np.zeros(len(T))
     for i in range(0,len(T)): kappa[i]=k1/(k2*(0.5*(T[i,k]**n+T[i,k-1]**n))+k3)
+    Tbound=((Tbl**4+T[0,k]**4)/2.0)**(1.0/4.0)
+    kappa[0]=k1/(k2*Tbound**n+k3)
+    Tbound2=((Tbr**4+T[-1,k]**4)/2.0)**(1.0/4.0)
+    kappa[-1]=k1/(k2*Tbound2**n+k3)
     return(kappa)       
 
 def corrector_boundary_velocity(u,k,m,T,dtk,r,A,P,PbR,PbL,TbR,TbL,RadE,rho):
     a=0.01372
     c=299.792
-    kappaT=get_tot_opacity(T,k)
+    kappaT=get_tot_opacity(T,k,TbL,TbR)
     RadE12=(3*rho[0,k]*(r[1,k]-r[0,k])*kappaT[0]*a*TbL**4+4*RadE[0,k])/(3*rho[0,k]*(r[1,k]-r[0,k])*kappaT[0]+4)
     RadEN12=(3*rho[-1,k]*(r[-1,k]-r[-2,k])*kappaT[-1]*a*TbR**4+4*RadE[-1,k])/(3*rho[-1,k]*(r[-2,k]-r[-1,k])*kappaT[-1]+4)
     uleft=u[0,k]-(dtk*A[0,k]/(0.5*m[0,k]))*(P[0,k]-PbL+(1./3.)*(RadE[0]-RadE12))    
@@ -305,8 +327,8 @@ def corrector_rad_E(RadE,A,m,r,u,rho,T,P,Cv,TbL,TbR,dt_prev,dt,k,gamma):
 #    RadE[0,k]=a*c*TbL**4
 #    RadE[-1,k]=a*c*TbR**4
     QP=artif_viscosity(P,gamma,u,r,rho,k)
-    kappaT=get_tot_opacity_corrector(T,k)
-    kappaA=get_abs_opacity_corrector(T,k)    
+    kappaT=get_tot_opacity_corrector(T,k,TbL,TbR)
+    kappaA=get_abs_opacity_corrector(T,k,TbL,TbR)    
     nu=np.zeros(len(P))
     xi=np.zeros(len(P))
     F0p=np.zeros(len(r)-2)
@@ -316,12 +338,19 @@ def corrector_rad_E(RadE,A,m,r,u,rho,T,P,Cv,TbL,TbR,dt_prev,dt,k,gamma):
     for i in range(0,len(P)):
         nu[i]=(dtk*kappaA[i]*c*2*a*T[i,k]**3)/(Cv[i]+dtk*kappaA[i]*c*2*a*T[i,k]**3)
         xi[i]=-(Ppk[i]+QP[i])*(Apk[i+1]*0.5*(u[i+1,k-1]+u[i+1,k])- Apk[i]*0.5*(u[i,k-1]+u[i,k]))-(m[i,k]/dtk)*(e[i,k]-e[i,k-1])   
+    F0m[0]=
+    F0p[-1]=         
     for i in range(1,len(r)-2):        
         F0p[i]=-2.0*c/(3.0*(0.5*(rho[i,k]+rho[i,k-1])*(0.5*(r[i,k]+r[i,k-1]-r[i-1,k]-r[i-1,k-1]))*kappaT[i]+0.5*(rho[i+1,k]+rho[i+1,k-1])*(0.5*(r[i+1,k]+r[i+1,k-1]-r[i,k]-r[i,k-1]))*kappaT[i+1])) #not sure about opacity eval
         F0m[i]=-2.0*c/(3.0*(0.5*(rho[i,k]+rho[i,k-1])*(0.5*(r[i,k]+r[i,k-1]-r[i-1,k]-r[i-1,k-1]))*kappaT[i]+0.5*(rho[i-1,k]+rho[i-1,k-1])*(0.5*(r[i,k]+r[i,k-1]-r[i-1,k]-r[i-1,k-1]))*kappaT[i-1])) #not sure about opacity eval
     C=np.zeros((len(RadE),len(RadE)))
     Q=np.zeros(len(RadE))
-    C[0,0]=1.0; C[-1,-1]=1.0
+    C[0,0]=m[0,k]/(dtk*rho[0,k])+0.5*m[0,k]*kappaA[0]*c*(1.0-nu[0])
+    C[0,1]=0.5*F0p[0]*0.5*(A[1,k-1]+A[1,k])
+    C[-1,-1]=
+    C[-1,-2]=
+    Q[-1]=
+    Q[0]=nu[0]*xi[0]+m[0,k]*kappaA[0]*c*(1.0-nu[0])*(a*0.5*(T[0,k-1]**4+T[0,k]**4)-0.5*RadE[0,k-1])-(1./3.0)*0.5*(RadE[0,k-1]+RadE[0,k])*Apk[0+1]*0.5*(u[0+1,k-1]+u[0+1,k])+0.5*(A[0,k-1]+A[0,k])*0.5*F0m[0]*(RadE[0,k-1])+m[0,k]*RadE[0,k-1]/(dtk*rho[0,k-1])
 #    Q[0]=RadE[0,k-1];Q[-1]=RadE[-1,k-1] #add real BCs
     Q[0]=0.0;Q[-1]=0.0 #add real BCs
     for i in range(1,len(RadE)-1):
@@ -336,7 +365,7 @@ def corrector_internale(e,RadE,T,P,A,u,r,dt_prev,dt,k,Cv,m,gamma,rho):
     a=0.01372
     c=299.792
     dtk=0.5*(dt_prev+dt)    
-    kappaA=get_abs_opacity_corrector(T,k) 
+    kappaA=get_abs_opacity_corrector(T,k,TbL,TbR) 
     QP=artif_viscosity(P,gamma,u,r,rho,k)    
     Ppk=get_Ppk(P,k)
     Apk=get_Apk(A,k)    
@@ -363,7 +392,7 @@ def compute_energy_conservationLHS(u,m,rho,e,RadE,k):
 def compute_energy_conservationRHS(RHS,P,gamma,u,r,rho,k,RadE,A,dt,dt_prev):
     QPk=artif_viscosity(P,gamma,u,r,rho,k)
     QPkm1=artif_viscosity(P,gamma,u,r,rho,k-1)
-    kappaT=get_tot_opacity_corrector(T,k)
+    kappaT=get_tot_opacity_corrector(T,k,TbL,TbR)
     a=0.01372
     c=299.792
     Ppk=get_Ppk(P,k)
@@ -526,8 +555,8 @@ e=np.zeros((N,Nt))
 for i in range(0,N):e[i,:]=T[i,0]/Cv[i]    
 P=np.ones((N,Nt))*5
 for i in range(0,N):P[i,:]=(gamma-1)*rho[i,:]*e[i,:]
-TbR=1.0
-TbL=1.0
+TbR=0.0
+TbL=0.0
 PbL=0.0#get_P(P,e,gamma,rho,1)[0][0]
 PbR=0.0#get_P(P,e,gamma,rho,1)[-1][0]
 RHS=0.0
