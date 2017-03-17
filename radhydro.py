@@ -68,20 +68,22 @@ def get_dt(u,r,P,gamma,rho,k):
     for i in range(0,len(P)):dt1[i]=Fc*dx[i]/u[i,k]
     dt2=np.zeros(len(P))
     for i in range(0,len(P)): dt2[i]=dx[i]*Fc/cs[i]
-    dtmax=0.005
+    dtmax=0.01
     dt_choices=np.hstack((dt1,dt2,dtmax))
     dt=np.min(dt_choices)
     return(dt) 
     
 def get_abs_opacity(T,k):
-    k1=1;k2=1;k3=1;
+    k1=20.0;k2=0.0;k3=1.0;
+    #k1=1;k2=1;k3=1;
     n=1
     kappa=np.zeros(len(T))
     for i in range(0,len(T)): kappa[i]=k1/(k2*T[i,k-1]**n+k3)
     return(kappa)
 
 def get_tot_opacity(T,k):
-    k1=1;k2=1;k3=1;
+    k1=20.5;k2=0.0;k3=1.0;
+    #k1=1;k2=1;k3=1;
     n=1
     kappa=np.zeros(len(T))
     for i in range(0,len(T)): kappa[i]=k1/(k2*T[i,k-1]**n+k3)
@@ -156,7 +158,7 @@ def predictor_boundary_velocity(u,k,m,T,dtk,r,A,P,PbR,PbL,TbR,TbL,RadE,rho):
     RadEN12=(3*rho[-1,k-1]*(r[-1,k-1]-r[-2,k-1])*kappaT[-1]*a*TbR**4+4*RadE[-1,k-1])/(3*rho[-1,k-1]*(r[-2,k-1]-r[-1,k-1])*kappaT[-1]+4)
     uleft=u[0,k-1]-(dtk*A[0,k-1]/(0.5*m[0]))*(P[0,k-1]-PbL+(1./3.)*RadE[0]-(1./3.)*RadE12)    
     uright=u[-1,k-1]-(dtk*A[-1,k-1]/(0.5*m[-1,k]))*(P[-1,k-1]-PbR+(1./3.)*RadE[-1]-(1./3.)*RadEN12)   
-    return(0,0)#(uleft[0],uright[0])
+    return(uleft[0],uright[0])
        
 def predictor_velocity(u,dt_prev,dt,m,A,r,rho,P,RadE,k,PbR,PbL,TbR,TbL,T,gamma):  #i is i+1/2, k is k+1/2
     dtk=0.5*(dt_prev+dt)    
@@ -197,7 +199,8 @@ def predictor_rad_E(RadE,A,m,r,u,rho,T,P,Cv,TbL,TbR,dt_prev,dt,k,gamma):
     C=np.zeros((len(RadE),len(RadE)))
     Q=np.zeros(len(RadE))
     C[0,0]=1.0; C[-1,-1]=1.0
-    Q[0]=RadE[0,k-1];Q[-1]=RadE[-1,k-1] #add real BCs
+ #   Q[0]=RadE[0,k-1];Q[-1]=RadE[-1,k-1] #add real BCs
+    Q[0]=0.0;Q[-1]=0.0 #add real BCs    
     for i in range(1,len(RadE)-1):
         C[i,i-1]=0.5*F0m[i]*0.5*(A[i,k-1]+A[i,k])
         C[i,i]=m[i,k]/(dtk*rho[i,k])+0.5*m[i,k]*kappaA[i]*c*(1.0-nu[i])-0.5*(A[i,k-1]+A[i,k])*0.5*F0m[i]-0.5*(A[i+1,k-1]+A[i+1,k])*0.5*F0p[i]
@@ -251,14 +254,16 @@ def get_RadEpk(RadE,k):
 #corrector u step, call u function sending Apk, Ppk, RadEpk    
 #corrector r, rho steps use the same function as predictor step     
 def get_abs_opacity_corrector(T,k):
-    k1=1;k2=1;k3=1;
+    k1=20.0;k2=0.0;k3=1.0;
+    #k1=1;k2=1;k3=1;    
     n=1
     kappa=np.zeros(len(T))
     for i in range(0,len(T)): kappa[i]=k1/(k2*(0.5*(T[i,k]**n+T[i,k-1]**n))+k3)
     return(kappa)    
 
 def get_tot_opacity_corrector(T,k):
-    k1=1;k2=1;k3=1;
+    k1=20.5;k2=0.0;k3=1.0;
+    #k1=1;k2=1;k3=1;    
     n=1
     kappa=np.zeros(len(T))
     for i in range(0,len(T)): kappa[i]=k1/(k2*(0.5*(T[i,k]**n+T[i,k-1]**n))+k3)
@@ -272,7 +277,7 @@ def corrector_boundary_velocity(u,k,m,T,dtk,r,A,P,PbR,PbL,TbR,TbL,RadE,rho):
     RadEN12=(3*rho[-1,k]*(r[-1,k]-r[-2,k])*kappaT[-1]*a*TbR**4+4*RadE[-1,k])/(3*rho[-1,k]*(r[-2,k]-r[-1,k])*kappaT[-1]+4)
     uleft=u[0,k]-(dtk*A[0,k]/(0.5*m[0,k]))*(P[0,k]-PbL+(1./3.)*(RadE[0]-RadE12))    
     uright=u[-1,k]-(dtk*A[-1,k]/(0.5*m[-1,k]))*(P[-1,k]-PbR+(1./3.)*(RadE[-1]-RadEN12)) 
-    return(0,0)#(uleft[0],uright[0])
+    return(uleft[0],uright[0])
        
 def corrector_velocity(u,dt_prev,dt,m,A,r,rho,P,RadE,k,PbR,PbL,TbR,TbL,T,gamma):  #i is i+1/2, k is k+1/2
     a=0.01372
@@ -317,7 +322,8 @@ def corrector_rad_E(RadE,A,m,r,u,rho,T,P,Cv,TbL,TbR,dt_prev,dt,k,gamma):
     C=np.zeros((len(RadE),len(RadE)))
     Q=np.zeros(len(RadE))
     C[0,0]=1.0; C[-1,-1]=1.0
-    Q[0]=RadE[0,k-1];Q[-1]=RadE[-1,k-1] #add real BCs
+#    Q[0]=RadE[0,k-1];Q[-1]=RadE[-1,k-1] #add real BCs
+    Q[0]=0.0;Q[-1]=0.0 #add real BCs
     for i in range(1,len(RadE)-1):
         C[i,i-1]=0.5*F0m[i]*0.5*(A[i,k-1]+A[i,k])
         C[i,i]=m[i,k]/(dtk*rho[i,k])+0.5*m[i,k]*kappaA[i]*c*(1.0-nu[i])-0.5*(A[i,k-1]+A[i,k])*0.5*F0m[i]-0.5*(A[i+1,k-1]+A[i+1,k])*0.5*F0p[i]
@@ -375,7 +381,7 @@ def compute_energy_conservationRHS(RHS,P,gamma,u,r,rho,k,RadE,A,dt,dt_prev):
     
 
     
-    
+''' 
 a=0.01372
 c=299.792
 geometry='Slab'
@@ -493,24 +499,25 @@ for k in range(1,2):
     lhs=compute_energy_conservationLHS(u,m,rho,e,RadE,k)
     RHS=compute_energy_conservationRHS(RHS,P,gamma,u,r,rho,k,RadE,A,dt,dt_prev)    
     
+'''   
     
-    
-   
+ #Morels test problem  
 a=0.01372
 c=299.792
-geometry='Sphere'
-N=10
+geometry='Slab'
+dx=0.02
+N=int(Rmax/dx)
 Nt=3
-gamma=1.5
+gamma=5.0/3.0
 Rmax=1.0
 rho=np.ones((N,Nt))   
 m=np.ones((N,Nt))   
-Cv=np.ones(N)
+Cv=np.ones(N)*0.1
 u=np.ones((N+1,Nt))*0
 u[:,0]=np.random.rand(N+1)*0
-T=np.ones((N,Nt))
+T=np.ones((N,Nt))*0.2
 r,A,V=calc_grid_area_vol(N,Rmax,geometry,Nt)  
-RadE=np.ones((N,Nt))*a
+RadE=np.ones((N,Nt))*a*0.2**4
 for i in range(0, N):
     for j in range(0,Nt):
         m[i,j]=rho[i,j]*V[i,j]
@@ -521,8 +528,8 @@ P=np.ones((N,Nt))*5
 for i in range(0,N):P[i,:]=(gamma-1)*rho[i,:]*e[i,:]
 TbR=1.0
 TbL=1.0
-PbL=get_P(P,e,gamma,rho,1)[0][0]
-PbR=get_P(P,e,gamma,rho,1)[-1][0]
+PbL=0.0#get_P(P,e,gamma,rho,1)[0][0]
+PbR=0.0#get_P(P,e,gamma,rho,1)[-1][0]
 RHS=0.0
 for k in range(1,2):
     dt=get_dt(u,r,P,gamma,rho,k)
