@@ -175,7 +175,7 @@ def predictor_velocity(u,dt_prev,dt,m,A,r,rho,P,RadE,k,PbR,PbL,TbR,TbL,T,gamma):
     u[-1,k]=bu[1]
     QP=artif_viscosity(P,gamma,u,r,rho,k-1)
     for i in range(1,len(u)-1):
-        u[i,k]=u[i,k-1]-0.5*(dt_prev+dt)*(A[i,k-1]/(0.5*m[i,k]+0.5*m[i-1,k]))*(P[i,k-1]+QP[i]+(1./3.)*(RadE[i,k-1]-RadE[i-1,k-1])-P[i-1,k-1]-QP[i-1])    
+        u[i,k]=u[i,k-1]-0.5*(dt_prev+dt)*(A[i,k-1]/(0.5*m[i,k-1]+0.5*m[i-1,k-1]))*(P[i,k-1]+QP[i]+(1./3.)*(RadE[i,k-1]-RadE[i-1,k-1])-P[i-1,k-1]-QP[i-1])    
     return(u)
     
 def predictor_rad_E(RadE,A,m,r,u,rho,T,P,Cv,TbL,TbR,dt_prev,dt,k,gamma):
@@ -493,7 +493,7 @@ geometry='Slab'
 dx=0.02
 Rmax=1.0
 N=int(Rmax/dx)
-Nt=2
+Nt=4
 gamma=5.0/3.0
 rho=np.ones((N,Nt))   
 m=np.ones((N,Nt))   
@@ -544,7 +544,8 @@ for k in range(1,Nt):
     print(u)
     r=get_coords(r,u,dt,dt_prev,k)
     A=get_area(A,k,r,geometry)
-    V=get_vol(V,k,r,geometry)        
+    V=get_vol(V,k,r,geometry)     
+    rho=get_mass_dens(rho,m,V,k)    
     RadE=corrector_rad_E(RadE,A,m,r,u,rho,T,P,Cv,TbL,TbR,dt_prev,dt,k,gamma,RadEp,Ap,Tp)
     print(RadE)
     e=corrector_internale(e,RadE,T,P,A,u,r,dt_prev,dt,k,Cv,m,gamma,rho,Tp)
