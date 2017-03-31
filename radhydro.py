@@ -392,7 +392,7 @@ def corrector_internale(e,RadE,T,P,A,u,r,dt_prev,dt,k,Cv,m,gamma,rho,Tp):
     return(e)     
     
       
-def compute_energy_conservationLHS(u,m,rho,e,RadE,k):
+def compute_energy_conservationLHS(u,m,rho,e,RadE,k,initialenergy):
     mm=np.zeros(len(u))
     for i in range(1,len(u)-1):
         mm[i]=0.5*(m[i-1,k]+m[i,k])
@@ -404,8 +404,9 @@ def compute_energy_conservationLHS(u,m,rho,e,RadE,k):
     for i in range(0,len(e)):
         inte+=m[i,k]*e[i,k]
     for i in range(0,len(e)):
-        radiat+=m[i,k]*(RadE[i,k]/rho[i,k])    
-    return(kine,inte,radiat)
+        radiat+=m[i,k]*(RadE[i,k]/rho[i,k])   
+    leak=kine+radiat+inte-initialenergy        
+    return(kine,inte,radiat,leak)
 
 def compute_initialenergy(m,u,e,RadE,rho):
     sum3=0.0;sum4=0.0;sum5=0.0;
@@ -446,7 +447,7 @@ def compute_energy_conservationRHS(P,lin,lin2,gamma,u,r,rho,k,RadE,A,dt,dt_prev,
     F0R=0.5*(F0Rold+F0Rnew)
 
     lin-=1.0*dtk*(0.5*(A[0,k]+A[0,k-1])*F0L-0.5*(A[-1,k]+A[-1,k-1])*F0R)
-    lin2-=(Apk[0]*((1./3.)*RadE12+0.5*(Pp[0,k-1]+Pp[0,k]))*0.5*(u[0,k]+u[0,k-1])-Apk[-1]*((1./3.)*RadEN12+0.5*(Pp[-1,k-1]+Pp[-1,k]))*0.5*(u[-1,k]+u[-1,k-1]))*dtk
+    lin2-=(Apk[0]*((1./3.)*RadE12+Pbl)*0.5*(u[0,k]+u[0,k-1])-Apk[-1]*((1./3.)*RadEN12+Pbr)*0.5*(u[-1,k]+u[-1,k-1]))*dtk
     return(lin,lin2)
     
  #Morels test problem  
@@ -515,17 +516,17 @@ for k in range(1,Nt):
     e=corrector_internale(e,RadE,T,P,A,u,r,dt_prev,dt,k,Cv,m,gamma,rho,Tp)
     T=get_T(T,e,Cv,k)
     P=get_P(P,e,gamma,rho,k)
-    ke,ie,rade=compute_energy_conservationLHS(u,m,rho,e,RadE,k)
+    ke,ie,rade,le=compute_energy_conservationLHS(u,m,rho,e,RadE,k,Ienergy)
     kev[k]=ke
     radev[k]=rade
     iev[k]=ie
     lin,lin2=compute_energy_conservationRHS(P,lin,lin2,gamma,u,r,rho,k,RadE,A,dt,dt_prev,Tp,Pp,Ap,RadEp,PbL,PbR)    
     linv[k]=lin
-    lin2v[k]=lin2
-    totv[k]=ie + ke + rade + lin
-    bal[k]=1.0-(ie+ke+rade+lin)/Ienergy
+    lin2v[k]=le
+    totv[k]=ie + ke + rade - le
+    bal[k]=1.0-(ie+ke+rade+le)/Ienergy
     if(k>1):    
-        print(totv[1]-ie-ke-rade-lin)
+        print(Ienergy-ie-ke-rade+le)
     
     
 import matplotlib.pyplot as plt
@@ -539,7 +540,7 @@ fig=plt.figure(2)
 plt.plot(x,iev,color="black",label="Internal energy")
 plt.plot(x,kev,color="red",label="Kinetic energy")
 plt.plot(x,radev,color="green",label="Radiation energy")
-plt.plot(x,abs(linv),color="purple",label="Leakage")
+plt.plot(x,abs(lin2v),color="purple",label="Leakage")
 plt.plot(x,totv,color="orange",label="Total")
 plt.yscale("log")
 plt.xlabel("Shakes")
