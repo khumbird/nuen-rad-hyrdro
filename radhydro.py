@@ -161,7 +161,7 @@ def artif_viscosity(P,gamma,u,r,rho,k):
 def predictor_boundary_velocity(u,k,m,T,dtk,r,A,P,PbR,PbL,TbR,TbL,RadE,rho,a):
     kappaT=get_tot_opacity(T,k,TbL,TbR)
     RadE12=(3.0*rho[0,k-1]*(r[1,k-1]-r[0,k-1])*kappaT[0]*a*TbL**4+4.0*RadE[0,k-1])/(3.0*rho[0,k-1]*(r[1,k-1]-r[0,k-1])*kappaT[0]+4.0)
-    RadEN12=(3.0*rho[-1,k-1]*(r[-1,k-1]-r[-2,k-1])*kappaT[-1]*a*TbR**4+4.0*RadE[-1,k-1])/(3.0*rho[-1,k-1]*(r[-1,k-1]-r[-2,k-1])*kappaT[-1]+4.0)    
+    RadEN12=(3.0*rho[-1,k-1]*(r[-1,k-1]-r[-2,k-1])*kappaT[-1]*a*TbR**4+4.0*RadE[-1,k-1])/(3.0*rho[-1,k-1]*(r[-1,k-1]-r[-2,k-1])*kappaT[-1]+4.0)  
     uleft=u[0,k-1]-(dtk*A[0,k-1]/(0.5*m[0,k]))*(P[0,k-1]-PbL+(1.0/3.0)*(RadE[0,k-1]-RadE12))    
     uright=u[-1,k-1]-(dtk*A[-1,k-1]/(0.5*m[-1,k]))*(-P[-1,k-1]+PbR+(1.0/3.0)*(RadEN12-RadE[-1,k-1]))   
     bu=[uleft,uright]
@@ -214,7 +214,7 @@ def predictor_rad_E(RadE,A,m,r,u,rho,T,P,Cv,TbL,TbR,dt_prev,dt,k,gamma):
     C[-1,-1]=m[-1,k]/(dtk*rho[-1,k])+0.5*m[-1,k]*kappaA[-1]*c*(1.0-nu[-1])-0.5*(A[-2,k-1]+A[-2,k])*0.5*F0m[-2]-0.5*(A[-1,k-1]+A[-1,k])*0.5*F0p[-1]
     C[-1,-2]=0.5*F0m[-2]*0.5*(A[-2,k-1]+A[-2,k])
     Q[-1]=nu[-1]*xi[-1]+m[-1,k]*kappaA[-1]*c*(1.0-nu[-1])*(a*T[-1,k-1]**4-0.5*RadE[-1,k-1])-(1./3.0)*RadE[-1,k-1]*(-A[-2,k-1]*0.5*(u[-2,k-1]+u[-2,k])+A[-1,k-1]*0.5*(u[-1,k-1]+u[-1,k]))+ \
-         0.5*(A[-1,k-1]+A[-1,k])*0.5*F0p[-1]*(-a*TbR**4+RadE[-2,k-1])-0.5*(A[-2,k-1]+A[-2,k])*0.5*F0m[-2]*(RadE[-2,k-1]-RadE[-1,k-1])+m[-1,k]*RadE[-1,k-1]/(dtk*rho[-1,k-1])
+         0.5*(A[-1,k-1]+A[-1,k])*0.5*F0p[-1]*(-a*TbR**4+RadE[-1,k-1])-0.5*(A[-2,k-1]+A[-2,k])*0.5*F0m[-2]*(RadE[-2,k-1]-RadE[-1,k-1])+m[-1,k]*RadE[-1,k-1]/(dtk*rho[-1,k-1])
             
             
 #    C[0,0]=1.0;C[-1,-1]=1.0;
@@ -306,8 +306,10 @@ def corrector_boundary_velocity(u,k,m,T,dtk,r,A,P,PbR,PbL,TbR,TbL,RadE,rho,Tp):
     RadEN12old=(3*rho[-1,k-1]*(r[-1,k-1]-r[-2,k-1])*kappaT[-1]*a*TbR**4+4*RadE[-1,k-1])/(3*rho[-1,k-1]*(r[-1,k-1]-r[-2,k-1])*kappaT[-1]+4)
     RadE12new=(3*rho[0,k]*(r[1,k]-r[0,k])*kappaT[0]*a*TbL**4+4*RadE[0,k])/(3*rho[0,k]*(r[1,k]-r[0,k])*kappaTold[0]+4)
     RadEN12new=(3*rho[-1,k]*(r[-1,k]-r[-2,k])*kappaT[-1]*a*TbR**4+4*RadE[-1,k])/(3*rho[-1,k]*(r[-1,k]-r[-2,k])*kappaT[-1]+4)
-    RadE12=0.5*(RadE12old+RadE12new)
-    RadEN12=0.5*(RadEN12old+RadEN12new)
+    RadE12=(3*0.5*(rho[0,k-1]+rho[0,k])*0.5*(r[1,k-1]-r[0,k-1]+r[1,k]-r[0,k])*kappaT[0]*a*TbL**4+4*0.5*(RadE[0,k-1]+RadE[0,k]))/(3*0.5*(rho[0,k-1]+rho[0,k])*0.5*(r[1,k-1]-r[0,k-1]+r[1,k]-r[0,k])*kappaTold[0]+4.0)
+    #0.5*(RadE12old+RadE12new)
+    RadEN12=(3*0.5*(rho[-1,k-1]+rho[-1,k])*0.5*(r[-1,k-1]-r[-2,k-1]+r[-1,k]-r[-2,k])*kappaT[-1]*a*TbL**4+4*0.5*(RadE[-1,k-1]+RadE[-1,k]))/(3*0.5*(rho[-1,k-1]+rho[-1,k])*0.5*(r[-1,k-1]-r[-2,k-1]+r[-1,k]-r[-2,k])*kappaTold[-1]+4.0)
+    #0.5*(RadEN12old+RadEN12new)
     uleft=u[0,k-1]-(dtk*0.5*(A[0,k]+A[0,k-1])/(0.5*m[0,k]))*(0.5*(P[0,k]+P[0,k-1])-PbL+(1./3.)*(0.5*(RadE[0,k]+RadE[0,k-1])-RadE12))    
     uright=u[-1,k-1]-(dtk*0.5*(A[-1,k]+A[-1,k-1])/(0.5*m[-1,k]))*(-0.5*(P[-1,k-1]+P[-1,k])+PbR+(1./3.)*(-0.5*(RadE[-1,k]+RadE[-1,k-1])+RadEN12)) 
     bu=[uleft,uright]
@@ -362,7 +364,7 @@ def corrector_rad_E(RadE,A,m,r,u,rho,T,P,Cv,TbL,TbR,dt_prev,dt,k,gamma,Ap,Tp):
     C[-1,-1]=m[-1,k]/(dtk*rho[-1,k])+0.5*m[-1,k]*kappaA[-1]*c*(1.0-nu[-1])-0.5*(A[-2,k-1]+A[-2,k])*0.5*F0m[-2]-0.5*(A[-1,k-1]+A[-1,k])*0.5*F0p[-1]
     C[-1,-2]=0.5*F0m[-2]*0.5*(A[-2,k-1]+A[-2,k])
     Q[-1]=nu[-1]*xi[-1]+m[-1,k]*kappaA[-1]*c*(1.0-nu[-1])*(a*0.5*(Tp[-1,k]**4+T[-1,k-1]**4)-0.5*RadE[-1,k-1])-(1./3.0)*0.5*(RadE[-1,k-1]+RadE[-1,k])*(-Ap[-2,k-1]*0.5*(u[-2,k-1]+u[-2,k])+Ap[-1,k-1]*0.5*(u[-1,k-1]+u[-1,k]))+ \
-         0.5*(A[-1,k-1]+A[-1,k])*0.5*F0p[-1]*(-a*TbR**4+RadE[-2,k-1])-0.5*(A[-2,k-1]+A[-2,k])*0.5*F0m[-2]*(RadE[-2,k-1]-RadE[-1,k-1])+m[-1,k]*RadE[-1,k-1]/(dtk*rho[-1,k-1])
+         0.5*(A[-1,k-1]+A[-1,k])*0.5*F0p[-1]*(-a*TbR**4+RadE[-1,k-1])-0.5*(A[-2,k-1]+A[-2,k])*0.5*F0m[-2]*(RadE[-2,k-1]-RadE[-1,k-1])+m[-1,k]*RadE[-1,k-1]/(dtk*rho[-1,k-1])
             
 
 #    C[0,0]=1.0;C[-1,-1]=1.0
@@ -391,7 +393,22 @@ def corrector_internale(e,RadE,T,P,A,u,r,dt_prev,dt,k,Cv,m,gamma,rho,Tp):
         e[i,k]=e[i,k]+(dtk*Cv[i]*(m[i,k]*c*kappaA[i]*(0.5*(RadE[i,k]+RadE[i,k-1])-a*0.5*(T[i,k-1]**4+Tp[i,k]**4))+xi[i]))/(m[i,k]*Cv[i]+dtk*m[i,k]*kappaA[i]*c*2*a*0.5*(Tp[i,k-1]**3+Tp[i,k]**3))
     return(e)     
     
-      
+
+def compute_initialenergy(m,u,e,RadE,rho):
+    sum3=0.0;sum4=0.0;sum5=0.0;
+    mm0=np.zeros(len(u))
+    for i in range(1,len(u)-1):
+        mm0[i]=0.5*(m[i-1,0]+m[i,0])
+    mm0[0]=0.5*m[0,0]
+    mm0[-1]=0.5*m[-1,0]
+    for i in range(0,len(u)):
+        sum3+=0.5*mm0[i]*u[i,0]**2        
+    for i in range(0,len(e)):
+        sum4+=m[i,0]*e[i,0]
+    for i in range(0,len(rho)):
+        sum5+=m[i,0]*RadE[i,0]/rho[i,0]
+    return(sum3+sum4+sum5,sum3,sum4,sum5)
+
 def compute_energy_conservationLHS(u,m,rho,e,RadE,k,initialenergy):
     mm=np.zeros(len(u))
     for i in range(1,len(u)-1):
@@ -406,49 +423,100 @@ def compute_energy_conservationLHS(u,m,rho,e,RadE,k,initialenergy):
     for i in range(0,len(e)):
         radiat+=m[i,k]*(RadE[i,k]/rho[i,k])   
     leak=kine+radiat+inte-initialenergy        
-    return(kine,inte,radiat,leak)
-
-def compute_initialenergy(m,u,e,RadE,rho):
-    sum3=0.0;sum4=0.0;sum5=0.0;
-    mm0=np.zeros(len(u))
+    return(kine,inte,radiat,leak)  
+    
+def compute_KE(u,m,k):
+    mm=np.zeros(len(u))
     for i in range(1,len(u)-1):
-        mm0[i]=0.5*(m[i-1,0]+m[i,0])
-    mm0[0]=0.5*m[0,0]
-    mm0[-1]=0.5*m[-1,0]
+        mm[i]=0.5*(m[i-1,k]+m[i,k])
+    mm[0]=0.5*m[0,k]
+    mm[-1]=0.5*m[-1,k]
+    kine=0.0;
     for i in range(0,len(u)):
-        sum3+=0.5*mm0[i]*u[i,0]**2        
-    for i in range(0,len(e)):
-        sum4+=m[i,0]*e[i,0]
-    for i in range(0,len(e)):
-        sum5+=m[i,0]*RadE[i,0]/rho[i,0]
-    return(sum3+sum4+sum5,sum3,sum4,sum5)
+        kine+=0.5*mm[i]*u[i,k]**2        
+    return(kine)    
     
+def compute_PE(m,e,k):
+    mm=np.zeros(len(u))
+    for i in range(1,len(u)-1):
+        mm[i]=0.5*(m[i-1,k]+m[i,k])
+    mm[0]=0.5*m[0,k]
+    mm[-1]=0.5*m[-1,k]
+    inte=0.0;
+    for i in range(0,len(e)):
+        inte+=m[i,k]*e[i,k]
+    return(inte)      
     
-def compute_energy_conservationRHS(P,lin,lin2,gamma,u,r,rho,k,RadE,A,dt,dt_prev,Tp,Pp,Ap,RadEp,Pbl,Pbr):
+def compute_RadE(m,rho,RadE,k):
+    mm=np.zeros(len(u))
+    for i in range(1,len(u)-1):
+        mm[i]=0.5*(m[i-1,k]+m[i,k])
+    mm[0]=0.5*m[0,k]
+    mm[-1]=0.5*m[-1,k]
+    radiat=0.0;
+    for i in range(0,len(e)):
+        radiat+=m[i,k]*(RadE[i,k]/rho[i,k])   
+    return(radiat)      
+    
+def compute_advleak(P,gamma,u,r,rho,k,RadE,A,dt,dt_prev,Tp,Pp,Ap,RadEp,Pbl,Pbr,rp,rhop):
+    kappaT=get_tot_opacity(T,k,TbL,TbR)
+    a=0.01372
+    dtk=0.5*(dt_prev+dt)       
+    Apk=get_Apk(Ap,k)
+    aT4l=a*TbL*TbL*TbL*TbL
+    aT4r=a*TbR*TbR*TbR*TbR
+    #RadE12old=(3*rho[0,k-1]*(r[1,k-1]-r[0,k-1])*kappaT[0]*a*TbL**4+4*RadE[0,k-1])/(3*rho[0,k-1]*(r[1,k-1]-r[0,k-1])*kappaT[0]+4)
+    #RadEN12old=(3*rho[-1,k-1]*(r[-1,k-1]-r[-2,k-1])*kappaT[-1]*a*TbR**4+4*RadE[-1,k-1])/(3*rho[-1,k-1]*(r[-1,k-1]-r[-2,k-1])*kappaT[-1]+4)
+    RadE12new=(3.0*rho[0,k]*(r[1,k]-r[0,k])*kappaT[0]*aT4l+4.0*RadE[0,k])/(3.0*rho[0,k]*(r[1,k]-r[0,k])*kappaT[0]+4.0)
+    RadEN12new=(3.0*rho[-1,k]*(r[-1,k]-r[-2,k])*kappaT[-1]*aT4r+4.0*RadE[-1,k])/(3.0*rho[-1,k]*(r[-1,k]-r[-2,k])*kappaT[-1]+4.0)
+    #RadE12=0.5*(RadE12old+RadE12new)
+    #RadEN12=0.5*(RadEN12old+RadEN12new)
+    RadE12=(3*0.5*(rho[0,k-1]+rho[0,k])*0.5*(r[1,k-1]-r[0,k-1]+r[1,k]-r[0,k])*kappaT[0]*a*TbL**4+4*0.5*(RadE[0,k-1]+RadE[0,k]))/(3*0.5*(rho[0,k-1]+rho[0,k])*0.5*(r[1,k-1]-r[0,k-1]+r[1,k]-r[0,k])*kappaT[0]+4.0)
+    RadEN12=(3*0.5*(rho[-1,k-1]+rho[-1,k])*0.5*(r[-1,k-1]-r[-2,k-1]+r[-1,k]-r[-2,k])*kappaT[-1]*a*TbL**4+4*0.5*(RadE[-1,k-1]+RadE[-1,k]))/(3*0.5*(rho[-1,k-1]+rho[-1,k])*0.5*(r[-1,k-1]-r[-2,k-1]+r[-1,k]-r[-2,k])*kappaT[-1]+4.0)
+    lina=(Apk[0]*((1./3.)*RadE12+Pbl)*u[0,k]-Apk[-1]*((1./3.)*RadEN12+Pbr)*u[-1,k])*dtk
+    return(lina)
+    
+def compute_radleak(P,gamma,u,r,rho,k,RadE,A,dt,dt_prev,Tp,Pp,Ap,RadEp,Pbl,Pbr,rp,rhop):
     kappaT=get_tot_opacity(T,k,TbL,TbR)
     a=0.01372
     c=299.792 
-    dtk=0.5*(dt_prev+dt)       
-    Ppk=get_Ppk(Pp,k)
-    Apk=get_Apk(Ap,k)
-    RadEpk=get_RadEpk(RadEp,k)
-    RadE12old=(3*rho[0,k-1]*(r[1,k-1]-r[0,k-1])*kappaT[0]*a*TbL**4+4*RadEp[0,k-1])/(3*rho[0,k-1]*(r[1,k-1]-r[0,k-1])*kappaT[0]+4)
-    RadEN12old=(3*rho[-1,k-1]*(r[-1,k-1]-r[-2,k-1])*kappaT[-1]*a*TbR**4+4*RadEp[-1,k-1])/(3*rho[-1,k-1]*(r[-1,k-1]-r[-2,k-1])*kappaT[-1]+4)
-    RadE12new=(3*rho[0,k]*(r[1,k]-r[0,k])*kappaT[0]*a*TbL**4+4*RadEp[0,k])/(3*rho[0,k]*(r[1,k]-r[0,k])*kappaT[0]+4)
-    RadEN12new=(3*rho[-1,k]*(r[-1,k]-r[-2,k])*kappaT[-1]*a*TbR**4+4*RadEp[-1,k])/(3*rho[-1,k]*(r[-1,k]-r[-2,k])*kappaT[-1]+4)
-    RadE12=0.5*(RadE12old+RadE12new)
-    RadEN12=0.5*(RadEN12old+RadEN12new)
+    dtk=0.5*(dt_prev+dt)    
+    aT4l=a*TbL*TbL*TbL*TbL
+    aT4r=a*TbR*TbR*TbR*TbR
+    F0Lold=(-2.0*c/(3.0*rho[0,k-1]*(r[1,k-1]-r[0,k-1])*kappaT[0]+4.0))*(RadE[0,k-1]-aT4l)
+    F0Rold=(-2.0*c/(3.0*rho[-1,k-1]*(r[-1,k-1]-r[-2,k-1])*kappaT[-1]+4.0))*(aT4r-RadE[-1,k-1])
+    F0Lnew=(-2.0*c/(3.0*rho[0,k]*(r[1,k]-r[0,k])*kappaT[0]+4.0))*(RadEp[0,k]-aT4l)
+    F0Rnew=(-2.0*c/(3.0*rho[-1,k]*(r[-1,k]-r[-2,k])*kappaT[-1]+4.0))*(aT4r-RadE[-1,k])
+    
+    F0L=-2.*c/(3.0*0.5*(rho[0,k]+rho[0,k-1])*0.5*(r[1,k]+r[1,k-1]-r[0,k]-r[0,k-1])*kappaT[0]+4.0)*(RadE[0,k]-aT4l)
 
-    F0Lold=(-2*c/(3*rho[0,k-1]*(r[1,k-1]-r[0,k-1])*kappaT[0]+4.0))*(RadE[0,k-1]-a*TbL**4)
-    F0Rold=(-2*c/(3*rho[-1,k-1]*(r[-1,k-1]-r[-2,k-1])*kappaT[-1]+4.0))*(a*TbR**4-RadE[-1,k-1])
-    F0Lnew=(-2*c/(3*rho[0,k]*(r[1,k]-r[0,k])*kappaT[0]+4.0))*(RadE[0,k]-a*TbL**4)
-    F0Rnew=(-2*c/(3*rho[-1,k]*(r[-1,k]-r[-2,k])*kappaT[-1]+4.0))*(a*TbR**4-RadE[-1,k])
-    F0L=0.5*(F0Lold+F0Lnew)
-    F0R=0.5*(F0Rold+F0Rnew)
+    F0R=-2.*c/(3.0*0.5*(rho[-1,k]+rho[-1,k-1])*0.5*(r[-1,k]+r[-1,k-1]-r[-2,k]-r[-2,k-1])*kappaT[-1]+4.0)*(aT4r-RadE[-1,k])
 
-    lin-=1.0*dtk*(0.5*(A[0,k]+A[0,k-1])*F0L-0.5*(A[-1,k]+A[-1,k-1])*F0R)
-    lin2-=(Apk[0]*((1./3.)*RadE12+Pbl)*0.5*(u[0,k]+u[0,k-1])-Apk[-1]*((1./3.)*RadEN12+Pbr)*0.5*(u[-1,k]+u[-1,k-1]))*dtk
-    return(lin,lin2)
+#    F0L=0.5*(F0Lold+F0Lnew)
+#    F0R=0.5*(F0Rold+F0Rnew)
+
+    lin2a=dtk*(0.5*(A[0,k]+A[0,k-1])*F0L-0.5*(A[-1,k]+A[-1,k-1])*F0R)
+    return(lin2a)    
+    
+
+
+def compute_bal(m,u,rho,RadE,r,k,leakage,dt,T,TbL,TbR,RadEp,Ap,Pp):
+    kappaT=get_tot_opacity(T,k,TbL,TbR)
+    mm=np.zeros(len(u))
+    for i in range(1,len(u)-1):
+        mm[i]=0.5*(m[i-1,k]+m[i,k])
+    mm[0]=0.5*m[0,k]
+    mm[-1]=0.5*m[-1,k]
+    rie=0.0;ke=0;
+    for i in range(0,len(e)):
+        rie+=m[i,k]*(RadE[i,k]/rho[i,k]+e[i,k])- m[i,0]*(RadE[i,0]/rho[i,0]+e[i,0])
+    for i in range(0,len(u)):
+        ke+=0.5*mm[i]*u[i,k]**2-0.5*mm[i]*u[i,0]**2
+    lhs=ke+rie
+    F0L=-2*c/(3*rho[0,k]*(r[1,k]-r[0,k])*kappaT[0]+4.0)*(RadEp[0,k]-a*TbL**4)
+    F0R=-2*c/(3*(rho[-1,k])*(r[-1,k]-r[-2,k])*kappaT[-1]+4.0)*(a*TbR**4-RadE[-1,k])
+    leakage-=(dt*(A[0,k]*F0L-A[-1,k]*F0R)+dt*(Ap[0,k]*u[0,k]*(Pp[0,k]+(1./3.)*RadEp[0,k])-Ap[-1,k]*u[-1,k]*(Pp[-1,k]+(1./3.)*RadEp[-1,k])))
+    return(lhs,leakage)
     
  #Morels test problem  
 a=0.01372
@@ -457,22 +525,22 @@ geometry='Slab'
 dx=0.02
 Rmax=1.0
 N=int(Rmax/dx)
-Nt=1000
+Nt=100
 gamma=5.0/3.0
 rho=np.ones((N,Nt))   
 m=np.ones((N,Nt))   
 Cv=np.ones(N)*0.1
-u=np.ones((N+1,Nt))*0
+u=np.ones((N+1,Nt))*0.0
 T=np.ones((N,Nt))*0.2
 r,A,V=calc_grid_area_vol(N,Rmax,geometry,Nt)  
-RadE=np.ones((N,Nt))*a*0.2**4
+RadE=np.ones((N,Nt))*a*(0.2*0.2*0.2*0.2)
 for i in range(0, N):
     for j in range(0,Nt):
         m[i,j]=rho[i,j]*V[i,j]
 dt_vect=np.zeros(Nt)
 e=np.zeros((N,Nt))
 for i in range(0,N):e[i,:]=T[i,0]*Cv[i]    
-P=np.ones((N,Nt))*5
+P=np.ones((N,Nt))*5.0
 for i in range(0,N):P[i,:]=(gamma-1)*rho[i,:]*e[i,:]
 TbR=0.0
 TbL=0.0
@@ -505,30 +573,40 @@ for k in range(1,Nt):
     P=get_P(P,e,gamma,rho,k)
     Pp=P.copy()
     Tp=T.copy()
+    rp=r.copy()
+    rhop=rho.copy()
     RadEp=RadE.copy()
     Ap=A.copy()
     u=corrector_velocity(u,dt_prev,dt,m,A,r,rho,P,RadE,k,PbR,PbL,TbR,TbL,T,gamma,Tp)
+    ke=compute_KE(u,m,k) ############
+    lin=compute_advleak(P,gamma,u,r,rho,k,RadE,A,dt,dt_prev,Tp,Pp,Ap,RadEp,PbL,PbR,rp,rhop)####
     r=get_coords(r,u,dt,dt_prev,k)
     A=get_area(A,k,r,geometry)
     V=get_vol(V,k,r,geometry)     
     rho=get_mass_dens(rho,m,V,k)    
     RadE=corrector_rad_E(RadE,A,m,r,u,rho,T,P,Cv,TbL,TbR,dt_prev,dt,k,gamma,Ap,Tp)
+    rade=compute_RadE(m,rho,RadE,k)############
+    lin2=compute_radleak(P,gamma,u,r,rho,k,RadE,A,dt,dt_prev,Tp,Pp,Ap,RadEp,PbL,PbR,rp,rhop) #####
     e=corrector_internale(e,RadE,T,P,A,u,r,dt_prev,dt,k,Cv,m,gamma,rho,Tp)
+    ie=compute_PE(m,e,k)############
     T=get_T(T,e,Cv,k)
     P=get_P(P,e,gamma,rho,k)
     ke,ie,rade,le=compute_energy_conservationLHS(u,m,rho,e,RadE,k,Ienergy)
     kev[k]=ke
     radev[k]=rade
     iev[k]=ie
-    lin,lin2=compute_energy_conservationRHS(P,lin,lin2,gamma,u,r,rho,k,RadE,A,dt,dt_prev,Tp,Pp,Ap,RadEp,PbL,PbR)    
-    linv[k]=lin
-    lin2v[k]=le
+#    lin,lin2=compute_energy_conservationRHS(P,lin,lin2,gamma,u,r,rho,k,RadE,A,dt,dt_prev,Tp,Pp,Ap,RadEp,PbL,PbR,rp,rhop)    
+    linv[k]=linv[k-1]-lin
+    lin2v[k]=lin2v[k-1]-lin2
     totv[k]=ie + ke + rade - le
-    bal[k]=1.0-(ie+ke+rade+le)/Ienergy
+    bal[k]=1.0-(iev[k]+kev[k]+radev[k]+lin2v[k]+linv[k])/Ienergy
     if(k>1):    
-        print(Ienergy-ie-ke-rade+le)
+        print(Ienergy-ie-ke-rade-linv[k]-lin2v[k])
+
     
-    
+ 
+        
+        
 import matplotlib.pyplot as plt
 x=np.linspace(0,Nt/100,Nt)
 #fig=plt.figure(1)
